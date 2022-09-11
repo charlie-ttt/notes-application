@@ -8,7 +8,9 @@ import ClientOnly from "../../src/components/ClientOnly";
 import Container from "@mui/material/Container";
 import Link from "../../src/Link";
 import type { NextPage } from "next";
+import Pagination from "../../src/components/Pagination";
 import Typography from "@mui/material/Typography";
+import { useRouter } from "next/router";
 
 const PAGE_LIMIT = 20;
 
@@ -22,8 +24,8 @@ interface APIResponse {
 }
 
 const QUERY = gql`
-  query getNotes($limit: Int) {
-    notes(limit: $limit) {
+  query getNotes($limit: Int, $offset: Int) {
+    notes(limit: $limit, offset: $offset) {
       id
       text
     }
@@ -31,11 +33,18 @@ const QUERY = gql`
 `;
 
 const Home: NextPage = () => {
+  const router = useRouter();
+  const { page } = router.query;
+  const offset = (parseInt(page as string) - 1) * PAGE_LIMIT;
   const { data, loading, error } = useQuery<APIResponse>(QUERY, {
-    variables: { limit: PAGE_LIMIT },
+    variables: { offset, limit: PAGE_LIMIT },
   });
   if (loading) return <div>Loading</div>;
   if (error) return <div>Error</div>;
+
+  if (isNaN(parseInt(page as string))) {
+    return <>invalid path</>;
+  }
 
   return (
     <Container maxWidth="lg">
@@ -66,6 +75,7 @@ const Home: NextPage = () => {
               data.notes.map(({ id, text }) => <Card key={id} text={text} />)}
           </Box>
         </ClientOnly>
+        <Pagination current={parseInt(page as string)} />
       </Box>
     </Container>
   );
